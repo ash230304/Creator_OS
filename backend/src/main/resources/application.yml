@@ -1,0 +1,138 @@
+# ══════════════════════════════════════════════════════
+# CreatorOS Backend — application.yml
+# All secrets come from environment variables.
+# Never hardcode secrets here.
+# ══════════════════════════════════════════════════════
+
+spring:
+  application:
+    name: creatoros-backend
+
+  # ── DATABASE ──────────────────────────────────────
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/creatoros}
+    username: ${SPRING_DATASOURCE_USERNAME:creatoros}
+    password: ${SPRING_DATASOURCE_PASSWORD:creatoros_dev}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+
+  # ── JPA ───────────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: validate           # Flyway manages schema — never let Hibernate touch it
+    show-sql: false                # Set to true locally if you want to debug queries
+    open-in-view: false            # Avoid lazy-loading surprises
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  # ── FLYWAY ────────────────────────────────────────
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+  # ── FILE UPLOAD ───────────────────────────────────
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 500MB
+      max-request-size: 500MB
+
+  # ── ASYNC ─────────────────────────────────────────
+  task:
+    execution:
+      pool:
+        core-size: 4
+        max-size: 8
+        queue-capacity: 100
+      thread-name-prefix: creatoros-async-
+
+# ── SERVER ──────────────────────────────────────────
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /
+
+# ── JWT ─────────────────────────────────────────────
+jwt:
+  secret: ${JWT_SECRET:dev_secret_change_this_in_production_must_be_at_least_256_bits}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}    # 24 hours
+
+# ── STORAGE ─────────────────────────────────────────
+storage:
+  type: ${STORAGE_TYPE:local}                      # local | s3
+  local:
+    base-path: ${STORAGE_LOCAL_PATH:./uploads}
+  s3:
+    bucket: ${AWS_S3_BUCKET:creatoros-videos}
+    region: ${AWS_REGION:ap-south-1}
+
+# ── AI PROVIDERS ────────────────────────────────────
+ai:
+  provider: ${AI_PROVIDER:openai}                  # openai | groq
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    model: ${OPENAI_MODEL:gpt-4o-mini}
+  groq:
+    api-key: ${GROQ_API_KEY:}
+    model: ${GROQ_MODEL:llama-3.1-8b-instant}
+    base-url: https://api.groq.com/openai/v1
+
+# ── WHISPER ─────────────────────────────────────────
+whisper:
+  provider: ${WHISPER_PROVIDER:openai}             # openai | local
+  openai:
+    api-key: ${OPENAI_API_KEY:}                    # reuses same key
+    model: whisper-1
+  local:
+    executable-path: ${WHISPER_EXEC_PATH:whisper}  # local whisper binary
+
+# ── LOGGING ─────────────────────────────────────────
+logging:
+  level:
+    root: INFO
+    com.creatoros: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: INFO
+
+# ══════════════════════════════════════════════════════
+# PROFILES
+# ══════════════════════════════════════════════════════
+
+---
+# Profile: local (dev machine)
+spring:
+  config:
+    activate:
+      on-profile: local
+  jpa:
+    show-sql: true
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+---
+# Profile: test
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:mem:creatoros_test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false
+jwt:
+  secret: test_secret_key_do_not_use_in_production_at_all
+  expiration-ms: 3600000
