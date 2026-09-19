@@ -1,7 +1,10 @@
 package com.creatoros.common.security;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -9,23 +12,26 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * Security config — skeleton only.
+ * Security config — controls who can access what and wires in JWT auth.
  *
- * For now it:
- *   - Disables CSRF (REST API, stateless)
- *   - Sets session management to STATELESS
- *   - Opens /api/v1/health and /api/v1/auth/** publicly
- *   - Locks everything else behind authentication
+ * ── The filter chain order ────────────────────────────────────────────────────
+ * We insert JwtAuthFilter BEFORE UsernamePasswordAuthenticationFilter so that
+ * by the time the AuthorizationFilter runs, the SecurityContext is populated.
  *
- * JWT filter will be wired in during Week 2 (auth step).
+ * ── AuthenticationManager ────────────────────────────────────────────────────
+ * Exposed as a @Bean so AuthService can call authManager.authenticate(...),
+ * which delegates to DaoAuthenticationProvider → BCrypt check.
  */
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    // ── Public endpoints ───────────────────────────────────────────────────
+    private final JwtAuthFilter jwtAuthFilter;
+
     private static final String[] PUBLIC_PATHS = {
             "/api/v1/health",
             "/api/v1/auth/register",
@@ -35,28 +41,26 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // Disable CSRF — REST APIs use tokens, not cookies
             .csrf(AbstractHttpConfigurer::disable)
-
-            // Stateless session — JWT handles state
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-            // Authorization rules
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers(PUBLIC_PATHS).permitAll()
                     .anyRequest().authenticated()
-            );
-
-        // JWT filter will be added here in Week 2:
-        // http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            )
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // ── Password encoder ───────────────────────────────────────────────────
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 }

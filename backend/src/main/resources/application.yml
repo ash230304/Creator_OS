@@ -60,7 +60,7 @@ server:
 
 # ── JWT ─────────────────────────────────────────────
 jwt:
-  secret: ${JWT_SECRET:dev_secret_change_this_in_production_must_be_at_least_256_bits}
+  secret: ${JWT_SECRET:um0w7pGur7gOMYHc4SJoTDRA0H0ensbcfuZAkVu4xfc=}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}    # 24 hours
 
 # ── STORAGE ─────────────────────────────────────────
@@ -134,5 +134,5 @@ spring:
   flyway:
     enabled: false
 jwt:
-  secret: test_secret_key_do_not_use_in_production_at_all
+  secret: dGVzdF9zZWNyZXRfa2V5X2Zvcl91bml0X3Rlc3Rpbmdfc2VjdXJl
   expiration-ms: 3600000
