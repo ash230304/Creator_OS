@@ -114,13 +114,10 @@
         <!-- ══════════════════════════════════════
              HTTP CLIENT (for AI provider calls)
         ══════════════════════════════════════ -->
-        <!-- Spring's built-in RestClient (Spring 6.1+, no extra dep needed) -->
-        <!-- OpenAI Java SDK — lightweight -->
-        <dependency>
-            <groupId>com.theokanning.openai-gpt3-java</groupId>
-            <artifactId>service</artifactId>
-            <version>0.18.2</version>
-        </dependency>
+        <!-- We use Spring's built-in RestClient (Spring 6.1+) to call
+             OpenAI / Groq APIs. Both share the same HTTP API format
+             (OpenAI-compatible), so one client handles both providers.
+             No extra dependency needed — included in spring-boot-starter-web. -->
 
         <!-- ══════════════════════════════════════
              FILE HANDLING

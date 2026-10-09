@@ -65,4 +65,22 @@ public class User {
     @UpdateTimestamp
     @Column(nullable = false)
     private Instant updatedAt;
+
+    /**
+     * Profile update method — the only way to mutate name/bio/avatarUrl.
+     *
+     * Why a dedicated method instead of @Setter?
+     *   @Setter would allow any code anywhere to change any field arbitrarily.
+     *   A named method documents intent: this is a profile update operation.
+     *   It keeps mutation logic in one place — easy to add validation later.
+     *
+     * Called by UserService.updateMe() inside a @Transactional method.
+     * Hibernate dirty-checking detects the changed fields and generates
+     * the UPDATE SQL when the transaction commits.
+     */
+    public void updateProfile(String name, String bio, String avatarUrl) {
+        this.name      = name;
+        this.bio       = bio;
+        this.avatarUrl = avatarUrl;
+    }
 }

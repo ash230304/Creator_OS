@@ -125,10 +125,10 @@ All routes prefixed with `/api/v1/`
 | Week | Feature | Status |
 |---|---|---|
 | 1 | Foundation, docs, Docker, CI | ✅ Done |
-| 2 | DB schema, JWT auth, projects CRUD | 🔵 Next |
-| 3 | AI script generation | ⬜ Upcoming |
-| 4 | Video upload, transcription | ⬜ Upcoming |
-| 5 | Clip detection + FFmpeg | ⬜ Upcoming |
+| 2 | DB schema (7 migrations), JWT auth, projects CRUD | ✅ Done |
+| 3 | AI provider abstraction, script generation endpoint | ✅ Done |
+| 4 | Video upload (local storage), async processing pipeline | ✅ Done |
+| 5 | Clip detection + FFmpeg | 🔵 Next |
 | 6 | Auto captions, output polish | ⬜ Upcoming |
 | 7 | Dashboard + deployment | ⬜ Upcoming |
 | 8 | Demo + case study | ⬜ Upcoming |

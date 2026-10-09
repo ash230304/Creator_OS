@@ -120,61 +120,86 @@ backend/
 │
 ├── src/main/java/com/creatoros/
 │   │
-│   ├── CreatorOsApplication.java       ← app entry point (main method)
+│   ├── CreatorOsApplication.java            ← app entry point          ✅ DONE
 │   │
-│   ├── auth/                           ← WEEK 2: register, login, JWT
-│   │   ├── controller/                 ← HTTP layer: POST /auth/register, /auth/login
-│   │   ├── service/                    ← logic: hash password, validate, generate JWT
-│   │   ├── repository/                 ← DB query: findByEmail
-│   │   ├── entity/                     ← User table mapped to Java class
-│   │   └── dto/                        ← RegisterRequest, LoginRequest, AuthResponse
+│   ├── auth/                                ← register, login, JWT     ✅ DONE
+│   │   ├── controller/AuthController.java   ← POST /auth/register, /auth/login
+│   │   ├── service/AuthService.java         ← BCrypt, JWT generation
+│   │   ├── repository/UserRepository.java   ← findByEmail, existsByEmail
+│   │   ├── entity/User.java                 ← users table + updateProfile()
+│   │   └── dto/                             ← RegisterRequest, LoginRequest, AuthResponse
 │   │
-│   ├── user/                           ← WEEK 2: GET/PUT /users/me
-│   │   └── ...same structure...
+│   ├── user/                                ← profile management       ✅ DONE
+│   │   ├── controller/UserController.java   ← GET/PUT /users/me
+│   │   ├── service/UserService.java         ← getMe(), updateMe()
+│   │   └── dto/                             ← UserResponse, UpdateUserRequest
 │   │
-│   ├── project/                        ← WEEK 2: CRUD for projects
-│   │   └── ...same structure...
+│   ├── project/                             ← project CRUD             ✅ DONE
+│   │   ├── controller/ProjectController.java ← full CRUD endpoints
+│   │   ├── service/ProjectService.java      ← ownership-scoped ops
+│   │   ├── repository/ProjectRepository.java
+│   │   ├── entity/Project.java              ← Platform/Tone/Status enums
+│   │   └── dto/                             ← Create/Update/Response
 │   │
-│   ├── script/                         ← WEEK 3: AI script generation
-│   │   └── ...same structure...
+│   ├── script/                              ← AI script generation     ✅ DONE
+│   │   ├── controller/ScriptController.java ← POST /generate, GET /{id}
+│   │   ├── service/ScriptService.java       ← prompt builder + AI call
+│   │   ├── repository/ScriptRepository.java ← ownership-scoped lookup
+│   │   ├── entity/Script.java               ← JSONB content column
+│   │   └── dto/                             ← GenerateScriptRequest, ScriptContent, ScriptResponse
 │   │
-│   ├── video/                          ← WEEK 4: video upload & storage
-│   │   └── ...same structure...
+│   ├── video/                               ← video upload & storage   ✅ DONE
+│   │   ├── controller/VideoController.java  ← multipart upload + CRUD
+│   │   ├── service/VideoService.java        ← MIME validation, UUID paths
+│   │   ├── repository/VideoRepository.java  ← ownership-scoped queries
+│   │   ├── entity/Video.java                ← Status enum + updateStatus()
+│   │   └── dto/VideoResponse.java
 │   │
-│   ├── transcription/                  ← WEEK 4: Whisper integration
-│   │   └── ...same structure...
+│   ├── processing/                          ← async job pipeline       ✅ DONE
+│   │   ├── controller/ProcessingController.java ← POST /process (202), GET /jobs/{id}
+│   │   ├── service/ProcessingService.java   ← @Async 8-stage state machine
+│   │   ├── repository/ProcessingJobRepository.java
+│   │   ├── entity/ProcessingJob.java        ← advanceTo(), fail() methods
+│   │   └── dto/JobResponse.java
 │   │
-│   ├── clipping/                       ← WEEK 5: highlight detection + FFmpeg
-│   │   └── ...same structure...
+│   ├── transcription/                       ← Whisper integration      ⬜ NEXT
+│   ├── clipping/                            ← FFmpeg clip cutting       ⬜ UPCOMING
 │   │
-│   ├── processing/                     ← WEEK 4: async job runner & status tracking
-│   │   └── ...same structure...
+│   ├── ai/                                  ← LLM provider abstraction ✅ DONE
+│   │   └── provider/
+│   │       ├── AiProvider.java              ← interface: chat(system, user)
+│   │       └── OpenAiProvider.java          ← works for OpenAI AND Groq
 │   │
-│   ├── ai/                             ← WEEK 3: provider-agnostic AI abstraction
-│   │   ├── provider/                   ← ScriptGenerationProvider (interface)
-│   │   └── dto/                        ← ScriptRequest, ScriptResponse
-│   │
-│   └── common/                         ← shared infrastructure (done now)
+│   └── common/                              ← shared infrastructure    ✅ DONE
 │       ├── config/
-│       │   └── HealthController.java   ← GET /api/v1/health ← DONE ✅
+│       │   ├── AsyncConfig.java             ← bounded thread pool, @EnableAsync
+│       │   └── HealthController.java        ← GET /api/v1/health
 │       ├── exception/
-│       │   ├── GlobalExceptionHandler  ← DONE ✅
-│       │   ├── ResourceNotFoundException ← DONE ✅
-│       │   ├── ConflictException       ← DONE ✅
-│       │   └── BusinessException       ← DONE ✅
-│       ├── response/
-│       │   └── ApiResponse.java        ← DONE ✅
+│       │   ├── GlobalExceptionHandler.java
+│       │   ├── ResourceNotFoundException.java
+│       │   ├── ConflictException.java
+│       │   └── BusinessException.java
+│       ├── response/ApiResponse.java
 │       └── security/
-│           └── SecurityConfig.java     ← DONE ✅
+│           ├── SecurityConfig.java
+│           ├── JwtAuthFilter.java
+│           ├── JwtUtil.java
+│           └── SecurityUtils.java
 │
 ├── src/main/resources/
-│   ├── application.yml                 ← all config ← DONE ✅
-│   └── db/migration/                   ← WEEK 2: Flyway SQL files go here
+│   ├── application.yml                      ← all config (env-var based) ✅ DONE
+│   ├── application-local.yml                ← local secrets (gitignored!) ✅ DONE
+│   └── db/migration/
+│       ├── V1__create_users.sql             ✅
+│       ├── V2__create_projects.sql          ✅
+│       ├── V3__create_scripts.sql           ✅
+│       ├── V4__create_videos.sql            ✅
+│       ├── V5__create_clips.sql             ✅
+│       ├── V6__create_video_transcripts.sql ✅
+│       └── V7__create_processing_jobs.sql   ✅
 │
-├── src/test/                           ← WEEK 7: unit + integration tests
-│
-├── pom.xml                             ← Maven deps ← DONE ✅
-└── Dockerfile                          ← container build ← DONE ✅
+├── pom.xml                                  ✅ DONE
+└── Dockerfile                               ✅ DONE
 ```
 
 ### Why this package structure?
@@ -490,6 +515,10 @@ This keeps the final image lean — you don't ship the compiler to production.
 
 ## 5. Files Written So Far
 
+### Current file count: 49 Java files across 10 domain packages
+
+---
+
 ### ✅ [`pom.xml`](pom.xml)
 
 The Maven build file. Contains all dependencies:
@@ -529,8 +558,25 @@ This means:
 
 **Profiles:** The file has three sections separated by `---`:
 1. **default** — used in all environments
-2. **local** — extra SQL debug logging when you run with `-Dspring.profiles.active=local`
+2. **local** — extra SQL debug logging + loads `application-local.yml` (your secrets)
 3. **test** — H2 in-memory DB for running unit tests (no Postgres needed)
+
+**`application-local.yml` — local secrets file (gitignored):**
+Never put secrets (API keys, passwords) in `application.yml` — it gets committed to GitHub.
+Instead, create `src/main/resources/application-local.yml` (already in `.gitignore`):
+```yaml
+# application-local.yml — NEVER commit this file
+ai:
+  provider: groq
+  groq:
+    api-key: your-groq-key-here
+    model: qwen/qwen3.8-27b
+spring:
+  datasource:
+    username: your-mac-username
+    password: ""
+```
+Activated automatically when you boot with `SPRING_PROFILES_ACTIVE=local`.
 
 **Thread pool config (for async jobs):**
 ```yaml
@@ -757,6 +803,105 @@ ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-j
 
 ---
 
+### ✅ `common/config/AsyncConfig.java`
+
+Configures the thread pool for `@Async` video processing.
+
+```java
+@Configuration
+@EnableAsync
+public class AsyncConfig {
+    @Bean(name = "videoProcessingExecutor")
+    public Executor videoProcessingExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);    // always-on threads
+        executor.setMaxPoolSize(5);     // max under heavy load
+        executor.setQueueCapacity(20);  // queue before rejecting
+        executor.setThreadNamePrefix("video-processor-");
+        executor.initialize();
+        return executor;
+    }
+}
+```
+
+**Why bounded?** Video processing is CPU-bound (FFmpeg). More threads than CPU cores = no benefit + memory waste. Bounding at 5 prevents thread exhaustion.
+
+**Why named threads?** `"video-processor-1"` shows up in logs — far easier to debug than `"pool-3-thread-1"`.
+
+---
+
+### ✅ `script/controller/ScriptController.java`
+
+Exposes `ScriptService` over HTTP:
+```
+POST /api/v1/scripts/generate           → 201 (new resource created)
+GET  /api/v1/scripts/project/{id}       → list all scripts for a project
+GET  /api/v1/scripts/{id}               → fetch one script by UUID
+```
+
+Ownership is enforced in the service via `findByIdAndProjectUserId` — traverses `script → project → user`.
+
+---
+
+### ✅ `user/` — Full profile module
+
+**`UserController`**: `GET /api/v1/users/me` + `PUT /api/v1/users/me`
+
+**`UserService`**: Re-fetches from DB on every call (so profile updates after login are reflected).
+
+**`UserResponse`**: Deliberately excludes `passwordHash` — only safe fields exposed.
+
+**`User.updateProfile()`**: Named mutation method instead of a generic setter — documents intent and prevents arbitrary field mutations.
+
+---
+
+### ✅ `video/` — Video upload module
+
+**`VideoController`**: Multipart file upload (`Content-Type: multipart/form-data`).
+
+**`VideoService`** handles:
+- MIME type validation (mp4, mov, avi, mkv, webm allowed)
+- UUID-based storage paths (never uses original filename in path — path traversal prevention)
+- Local disk storage with S3-ready abstraction TODO in V2
+
+**`Video.Status`** enum: `UPLOADED → QUEUED → PROCESSING → COMPLETED → FAILED`
+
+---
+
+### ✅ `processing/` — Async pipeline module
+
+**`ProcessingJob`** entity with 8-state machine:
+```
+QUEUED → EXTRACTING_AUDIO → TRANSCRIBING → DETECTING_CLIPS
+       → GENERATING_CLIPS → ADDING_CAPTIONS → COMPLETED
+                                            → FAILED (any stage)
+```
+
+**`ProcessingService`**:
+- `createJob()` runs synchronously — returns `jobId` to client in < 100ms
+- `runPipeline()` annotated `@Async` — dispatched to thread pool immediately after
+- Each stage has a `TODO` comment ready for Whisper/FFmpeg wiring
+
+**`ProcessingController`**:
+- `POST /api/v1/videos/{id}/process` → **202 Accepted** (not 201 — resource isn't ready yet)
+- `GET  /api/v1/jobs/{jobId}` → polling endpoint, returns `progressPercent` 0-100
+
+---
+
+### ✅ 7 Flyway Migrations
+
+| File | Table | Key design note |
+|---|---|---|
+| V1 | `users` | BCrypt hash stored, never plaintext |
+| V2 | `projects` | Platform + Status enums as VARCHAR with CHECK constraints |
+| V3 | `scripts` | `content` column is JSONB — structured but flexible |
+| V4 | `videos` | `storage_path` uses UUID, not original filename |
+| V5 | `clips` | `duration_seconds` is a GENERATED ALWAYS AS computed column |
+| V6 | `video_transcripts` | Stores Whisper segments as JSONB |
+| V7 | `processing_jobs` | `progress_percent` CHECK (BETWEEN 0 AND 100) |
+
+---
+
 ## 6. Application Entry Point
 
 ```
@@ -934,53 +1079,119 @@ docker run -p 8080:8080 \
 - Java 17 (`java -version`)
 - Maven (`mvn -version`)
 - PostgreSQL running locally
+- A Groq or OpenAI API key
 
 ### One-time setup
 ```bash
 # Create the database
 createdb creatoros
+```
 
-# Clone/navigate to project
+### Step 1 — Create your local secrets file (one-time)
+Create `backend/src/main/resources/application-local.yml` (it's gitignored — safe):
+```yaml
+ai:
+  provider: groq
+  groq:
+    api-key: your-groq-key-here
+    model: qwen/qwen3.8-27b
+    base-url: https://api.groq.com/openai/v1
+spring:
+  datasource:
+    username: your-mac-username   # run: whoami
+    password: ""
+    url: jdbc:postgresql://localhost:5432/creatoros
+```
+
+### Step 2 — Start the app
+```bash
 cd backend/
+SPRING_PROFILES_ACTIVE=local mvn spring-boot:run
 ```
 
-### Start the app
-```bash
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/creatoros \
-SPRING_DATASOURCE_USERNAME=$(whoami) \
-SPRING_DATASOURCE_PASSWORD="" \
-SPRING_FLYWAY_ENABLED=false \
-mvn spring-boot:run
-```
+That's it. The `local` profile loads `application-local.yml` automatically.
 
-### Verify it works
+### Step 3 — Verify with curl
 ```bash
+# 1. Health check
 curl http://localhost:8080/api/v1/health
-# Expected:
-# {"success":true,"data":{"status":"UP","service":"creatoros-backend"},...}
+
+# 2. Register
+curl -s -X POST http://localhost:8080/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Ash","email":"ash@test.com","password":"password123"}'
+
+# 3. Login — copy the token from the response
+curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"ash@test.com","password":"password123"}'
+
+# Set token
+TOKEN="eyJ..."   # paste token here
+PROJECT_ID="..." # paste project ID here
+
+# 4. Create project
+curl -s -X POST http://localhost:8080/api/v1/projects \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"My Project","platform":"INSTAGRAM_REEL"}'
+
+# 5. Generate AI script ⭐
+curl -s -X POST http://localhost:8080/api/v1/scripts/generate \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"projectId\":\"$PROJECT_ID\",\"idea\":\"Why CS students fail interviews\",\"platform\":\"INSTAGRAM_REEL\",\"tone\":\"DIRECT\",\"targetDurationSeconds\":45}"
+
+# 6. Get profile
+curl -s http://localhost:8080/api/v1/users/me \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-### Test that protected routes require auth
+### Port conflict fix
+If you see `Port 8080 was already in use`:
 ```bash
-curl http://localhost:8080/api/v1/projects
-# Expected: 401 (once JWT filter is wired in Week 2)
+lsof -ti:8080 | xargs kill -9
 ```
 
 ---
 
-## 12. What's Coming Next
+## 12. What's Built vs. What's Coming
 
-| Phase | Week | What Gets Built |
-|---|---|---|
-| **Phase 2** | Week 2 Day 1–2 | 7 Flyway SQL migration files (all 7 tables) |
-| **Phase 3** | Week 2 Day 3–5 | User entity, `AuthService`, JWT generation, login/register endpoints |
-| **Phase 4** | Week 2 Day 5 | Projects CRUD (the first real feature) |
-| **Phase 5** | Week 3 | AI abstraction layer, script generation endpoint |
-| **Phase 6** | Week 4 | Video upload, file storage abstraction |
-| **Phase 7** | Week 4 | Async processing job runner + status polling |
-| **Phase 8** | Week 4 | Whisper transcription integration |
-| **Phase 9** | Week 5 | Clip detection + FFmpeg clip generation |
-| **Phase 10** | Week 6 | Caption burning, silence removal |
+### ✅ Completed
+
+| Module | What's done |
+|---|---|
+| **Foundation** | pom.xml, Dockerfile, .gitignore, README, application.yml, application-local.yml |
+| **DB Migrations** | All 7 Flyway migrations (users, projects, scripts, videos, clips, transcripts, jobs) |
+| **Auth** | Register, Login, JWT generation + validation, JwtAuthFilter, SecurityConfig |
+| **User** | GET/PUT `/users/me`, UserResponse DTO, partial update pattern |
+| **Project** | Full CRUD — Create, List, Get, Update (PATCH), Delete with cascade |
+| **Script** | AI script generation via Groq/OpenAI, prompt engineering, JSONB persistence |
+| **AI Layer** | `AiProvider` interface + `OpenAiProvider` (works for OpenAI AND Groq via config) |
+| **Video** | Multipart upload, MIME validation, UUID-based storage, full CRUD |
+| **Processing** | `@Async` 8-stage pipeline stub, job state machine, polling endpoint |
+| **Common** | `ApiResponse`, `GlobalExceptionHandler`, `AsyncConfig`, `SecurityUtils` |
+
+### 🔵 Next — Whisper Transcription
+
+```
+TranscriptionService:
+  1. Extract audio from video: FFmpeg → WAV
+  2. Send WAV to Whisper API
+  3. Parse timestamped segments response
+  4. Save to video_transcripts table (JSONB)
+  5. Return via GET /api/v1/videos/{id}/transcript
+```
+
+### ⬜ Upcoming
+
+| Phase | What |
+|---|---|
+| **Clip Detection** | Score transcript segments (keyword density, energy heuristic, or LLM scoring) |
+| **FFmpeg Clipping** | `ProcessBuilder` calls to cut clips + burn captions |
+| **Frontend** | Next.js dashboard — project list, script viewer, clip downloader |
+| **Deployment** | Railway/Render + GitHub Actions CI pipeline |
+| **Tests** | JUnit 5 unit tests for services, integration tests with H2 |
 
 ---
 

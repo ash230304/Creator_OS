@@ -96,6 +96,14 @@ public class Project {
         ARCHIVED    // hidden from dashboard
     }
 
+    public enum Tone {
+        DIRECT,         // straight to the point, no fluff
+        EDUCATIONAL,    // teach something step by step
+        ENTERTAINING,   // fun, energetic, high engagement
+        STORYTELLING,   // narrative arc, personal story
+        NEUTRAL         // balanced, no strong style preference
+    }
+
     // ── Mutation methods (instead of setters) ─────────────────────────────────
     // We expose specific update methods rather than open setters.
     // This documents intent: "you can update name, description, platform"
