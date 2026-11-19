@@ -1,6 +1,7 @@
 # ══════════════════════════════════════════════════════
 # CreatorOS Backend — Dockerfile
 # Multi-stage build: keeps the final image small
+# Build context: repository root
 # ══════════════════════════════════════════════════════
 
 # ── Stage 1: Build ────────────────────────────────────
@@ -9,12 +10,12 @@ FROM eclipse-temurin:17-jdk-alpine AS builder
 WORKDIR /build
 
 # Cache Maven dependencies first (layer caching)
-COPY pom.xml .
+COPY backend/pom.xml .
 RUN apk add --no-cache maven && \
     mvn dependency:go-offline -B
 
 # Copy source and build
-COPY src ./src
+COPY backend/src ./src
 RUN mvn package -DskipTests -B
 
 # ── Stage 2: Runtime ──────────────────────────────────
