@@ -1,6 +1,7 @@
 # ══════════════════════════════════════════════════════
 # CreatorOS Backend — Dockerfile
 # Multi-stage build: keeps the final image small
+# Build context: repository root
 # ══════════════════════════════════════════════════════
 
 # ── Stage 1: Build ────────────────────────────────────
