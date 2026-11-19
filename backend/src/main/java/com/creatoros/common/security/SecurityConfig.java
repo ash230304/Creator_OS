@@ -13,6 +13,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 /**
  * Security config — controls who can access what and wires in JWT auth.
@@ -35,12 +40,14 @@ public class SecurityConfig {
     private static final String[] PUBLIC_PATHS = {
             "/api/v1/health",
             "/api/v1/auth/register",
-            "/api/v1/auth/login"
+            "/api/v1/auth/login",
+            "/files/**"
     };
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -51,6 +58,30 @@ public class SecurityConfig {
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /**
+     * CORS config — allows the Next.js frontend to call the API.
+     * FRONTEND_URL env var sets the production URL (e.g. https://creatoros.vercel.app).
+     * Falls back to localhost:3000 for local dev.
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        String frontendUrl = System.getenv("FRONTEND_URL");
+        List<String> origins = frontendUrl != null && !frontendUrl.isBlank()
+                ? List.of("http://localhost:3000", frontendUrl)
+                : List.of("http://localhost:3000");
+
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(origins);
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", config);
+        source.registerCorsConfiguration("/files/**", config);
+        return source;
     }
 
     @Bean

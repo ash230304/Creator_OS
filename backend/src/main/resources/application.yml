@@ -12,7 +12,7 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/creatoros}
     username: ${SPRING_DATASOURCE_USERNAME:creatoros}
-    password: ${SPRING_DATASOURCE_PASSWORD:creatoros_dev}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -60,7 +60,7 @@ server:
 
 # ── JWT ─────────────────────────────────────────────
 jwt:
-  secret: ${JWT_SECRET:um0w7pGur7gOMYHc4SJoTDRA0H0ensbcfuZAkVu4xfc=}
+  secret: ${JWT_SECRET}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}    # 24 hours
 
 # ── STORAGE ─────────────────────────────────────────
@@ -85,10 +85,13 @@ ai:
 
 # ── WHISPER ─────────────────────────────────────────
 whisper:
-  provider: ${WHISPER_PROVIDER:openai}             # openai | local
+  provider: ${WHISPER_PROVIDER:openai}             # openai | groq | local
   openai:
     api-key: ${OPENAI_API_KEY:}                    # reuses same key
     model: whisper-1
+  groq:
+    api-key: ${GROQ_API_KEY:}                      # reuses Groq key (free tier)
+    model: ${WHISPER_GROQ_MODEL:whisper-large-v3-turbo}
   local:
     executable-path: ${WHISPER_EXEC_PATH:whisper}  # local whisper binary
 
@@ -134,5 +137,5 @@ spring:
   flyway:
     enabled: false
 jwt:
-  secret: dGVzdF9zZWNyZXRfa2V5X2Zvcl91bml0X3Rlc3Rpbmdfc2VjdXJl
+  secret: ${JWT_SECRET}
   expiration-ms: 3600000

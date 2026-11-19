@@ -162,8 +162,23 @@ backend/
 │   │   ├── entity/ProcessingJob.java        ← advanceTo(), fail() methods
 │   │   └── dto/JobResponse.java
 │   │
-│   ├── transcription/                       ← Whisper integration      ⬜ NEXT
-│   ├── clipping/                            ← FFmpeg clip cutting       ⬜ UPCOMING
+│   ├── transcription/                       ← Whisper integration      ✅ DONE
+│   │   ├── controller/TranscriptionController.java  ← GET /videos/{id}/transcript
+│   │   ├── service/WhisperProvider.java      ← interface: transcribe(audioFile)
+│   │   ├── service/OpenAiWhisperProvider.java ← FFmpeg WAV + Whisper multipart API
+│   │   ├── service/TranscriptionService.java ← orchestrator: extract → transcribe → save
+│   │   ├── repository/VideoTranscriptRepository.java
+│   │   ├── entity/VideoTranscript.java       ← 1-to-1 with Video, JSONB segments
+│   │   └── dto/                             ← TranscriptSegment, TranscriptResponse
+│   │
+│   ├── clipping/                            ← FFmpeg clip generation    ✅ DONE
+   │   ├── controller/ClipController.java   ← GET /videos/{id}/clips, GET /clips/{id}
+   │   ├── service/ClippingService.java     ← detect → cut → caption orchestrator
+   │   ├── service/ClipDetectionService.java ← heuristic highlight scoring
+   │   ├── service/FFmpegService.java       ← cutClip(), burnCaptions(), buildSrt()
+   │   ├── repository/ClipRepository.java   ← ownership-scoped queries
+   │   ├── entity/Clip.java                 ← score, rank, storagePath, CaptionStatus
+   │   └── dto/ClipResponse.java
 │   │
 │   ├── ai/                                  ← LLM provider abstraction ✅ DONE
 │   │   └── provider/
@@ -1170,17 +1185,20 @@ lsof -ti:8080 | xargs kill -9
 | **AI Layer** | `AiProvider` interface + `OpenAiProvider` (works for OpenAI AND Groq via config) |
 | **Video** | Multipart upload, MIME validation, UUID-based storage, full CRUD |
 | **Processing** | `@Async` 8-stage pipeline stub, job state machine, polling endpoint |
-| **Common** | `ApiResponse`, `GlobalExceptionHandler`, `AsyncConfig`, `SecurityUtils` |
+| **Transcription** | `WhisperProvider` interface + `OpenAiWhisperProvider` (FFmpeg WAV extract → Whisper multipart API → JSONB segments) |
 
-### 🔵 Next — Whisper Transcription
+### 🔵 Next — Clip Detection
 
 ```
-TranscriptionService:
-  1. Extract audio from video: FFmpeg → WAV
-  2. Send WAV to Whisper API
-  3. Parse timestamped segments response
-  4. Save to video_transcripts table (JSONB)
-  5. Return via GET /api/v1/videos/{id}/transcript
+ClipDetectionService:
+  1. Load transcript segments from video_transcripts
+  2. Score each segment for highlight potential:
+     - keyword density (action words, questions, strong statements)
+     - energy heuristic (short sentences = fast pace = high energy)
+     - OR: send segments to LLM for AI scoring
+  3. Select top N segments as clip candidates
+  4. Save clip start/end times to clips table
+  5. Trigger FFmpeg to cut the actual clips
 ```
 
 ### ⬜ Upcoming

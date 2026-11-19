@@ -9,6 +9,7 @@ import com.creatoros.video.entity.Video;
 import com.creatoros.video.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -54,6 +55,9 @@ public class VideoService {
 
     private final VideoRepository   videoRepository;
     private final ProjectRepository projectRepository;
+
+    @Value("${storage.local.base-path:./uploads}")
+    private String storagePath;
 
     private static final String UPLOAD_DIR = "uploads/videos/";
     private static final List<String> ALLOWED_MIME_TYPES = List.of(
@@ -144,8 +148,14 @@ public class VideoService {
                 .orElseThrow(() -> new ResourceNotFoundException("Video not found: " + videoId));
 
         // Delete from filesystem (best-effort — don't fail if file missing)
+        // Resolve relative paths against the configured base path so delete works
+        // regardless of the working directory at startup.
         try {
-            Files.deleteIfExists(Paths.get(video.getStoragePath()));
+            Path filePath = Paths.get(video.getStoragePath());
+            if (!filePath.isAbsolute()) {
+                filePath = Paths.get(storagePath).resolve(video.getStoragePath()).normalize();
+            }
+            Files.deleteIfExists(filePath);
         } catch (IOException e) {
             log.warn("Could not delete video file {}: {}", video.getStoragePath(), e.getMessage());
         }

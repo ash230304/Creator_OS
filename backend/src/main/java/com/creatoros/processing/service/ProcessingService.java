@@ -9,9 +9,10 @@ import com.creatoros.video.entity.Video;
 import com.creatoros.video.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.UUID;
 
@@ -49,6 +50,7 @@ public class ProcessingService {
 
     private final ProcessingJobRepository jobRepository;
     private final VideoRepository         videoRepository;
+    private final AsyncPipelineRunner     asyncPipelineRunner;
 
     // ── CREATE JOB (synchronous — returns to client immediately) ─────────────
 
@@ -78,8 +80,14 @@ public class ProcessingService {
 
         log.info("Processing job {} created for video {} by user {}", saved.getId(), videoId, userId);
 
-        // 4. Dispatch async pipeline (fire-and-forget — returns jobId to client)
-        runPipeline(saved.getId(), videoId);
+        // Dispatch after commit so the async worker can always see the queued job row.
+        UUID jobId = saved.getId();
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                asyncPipelineRunner.run(jobId, videoId);
+            }
+        });
 
         return JobResponse.from(saved);
     }
@@ -103,86 +111,4 @@ public class ProcessingService {
         return JobResponse.from(job);
     }
 
-    // ── ASYNC PIPELINE (runs in background thread) ────────────────────────────
-
-    /**
-     * The full video processing pipeline.
-     * Runs in a Spring-managed background thread (configured in AsyncConfig).
-     * Each stage advances the job state and updates progress_percent.
-     *
-     * V1: Stages are stubbed with Thread.sleep to simulate work.
-     * Real implementations to be added in Weeks 4-6:
-     *   EXTRACTING_AUDIO  → FFmpegService.extractAudio(videoPath)
-     *   TRANSCRIBING      → WhisperService.transcribe(audioPath)
-     *   DETECTING_CLIPS   → ClipDetectionService.detect(transcript)
-     *   GENERATING_CLIPS  → FFmpegService.cutClips(videoPath, segments)
-     *   ADDING_CAPTIONS   → FFmpegService.burnCaptions(clipPaths)
-     */
-    @Async
-    public void runPipeline(UUID jobId, UUID videoId) {
-        log.info("Pipeline started for job {} / video {}", jobId, videoId);
-
-        try {
-            advanceStage(jobId, videoId, ProcessingJob.Status.EXTRACTING_AUDIO, 10);
-            simulateWork("Extracting audio", 2000);
-
-            advanceStage(jobId, videoId, ProcessingJob.Status.TRANSCRIBING, 25);
-            simulateWork("Transcribing", 3000);
-            // TODO: WhisperService.transcribe(audioPath) → save to video_transcripts
-
-            advanceStage(jobId, videoId, ProcessingJob.Status.DETECTING_CLIPS, 50);
-            simulateWork("Detecting clips", 2000);
-            // TODO: ClipDetectionService.detect(transcript) → score segments
-
-            advanceStage(jobId, videoId, ProcessingJob.Status.GENERATING_CLIPS, 70);
-            simulateWork("Generating clips", 3000);
-            // TODO: FFmpegService.cutClips(videoPath, segments) → save to clips
-
-            advanceStage(jobId, videoId, ProcessingJob.Status.ADDING_CAPTIONS, 90);
-            simulateWork("Adding captions", 2000);
-            // TODO: FFmpegService.burnCaptions(clipPaths) → update clips.caption_path
-
-            // Mark complete
-            advanceStage(jobId, videoId, ProcessingJob.Status.COMPLETED, 100);
-            log.info("Pipeline COMPLETED for job {} / video {}", jobId, videoId);
-
-        } catch (Exception e) {
-            log.error("Pipeline FAILED for job {} / video {}: {}", jobId, videoId, e.getMessage(), e);
-            failJob(jobId, videoId, e.getMessage());
-        }
-    }
-
-    // ── Private helpers ───────────────────────────────────────────────────────
-
-    /**
-     * Advance the job to the next stage and update video status.
-     * Each call is its own transaction — short and atomic.
-     */
-    @Transactional
-    protected void advanceStage(UUID jobId, UUID videoId,
-                                ProcessingJob.Status status, int progress) {
-        jobRepository.findById(jobId).ifPresent(job -> {
-            job.advanceTo(status, progress);
-            log.debug("Job {} → {} ({}%)", jobId, status, progress);
-        });
-
-        // Keep video status in sync
-        if (status == ProcessingJob.Status.EXTRACTING_AUDIO) {
-            videoRepository.findById(videoId).ifPresent(v -> v.updateStatus(Video.Status.PROCESSING));
-        }
-        if (status == ProcessingJob.Status.COMPLETED) {
-            videoRepository.findById(videoId).ifPresent(v -> v.updateStatus(Video.Status.COMPLETED));
-        }
-    }
-
-    @Transactional
-    protected void failJob(UUID jobId, UUID videoId, String error) {
-        jobRepository.findById(jobId).ifPresent(job -> job.fail(error));
-        videoRepository.findById(videoId).ifPresent(v -> v.updateStatus(Video.Status.FAILED));
-    }
-
-    private void simulateWork(String stage, long millis) throws InterruptedException {
-        log.debug("Simulating: {} ({}ms)", stage, millis);
-        Thread.sleep(millis);
-    }
 }

@@ -22,14 +22,18 @@ FROM eclipse-temurin:17-jre-alpine AS runtime
 
 WORKDIR /app
 
+# Install FFmpeg — required for audio extraction and clip generation
+RUN apk add --no-cache ffmpeg
+
 # Create non-root user
 RUN addgroup -S creatoros && adduser -S creatoros -G creatoros
 
 # Copy built jar
 COPY --from=builder /build/target/*.jar app.jar
 
-# Create uploads directory
-RUN mkdir -p /app/uploads && chown -R creatoros:creatoros /app
+# Create uploads directory with correct ownership
+RUN mkdir -p /app/uploads/videos /app/uploads/clips /app/uploads/captioned \
+    && chown -R creatoros:creatoros /app
 
 USER creatoros
 

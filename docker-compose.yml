@@ -1,0 +1,51 @@
+version: '3.8'
+
+# ── Local development with Docker ─────────────────────────────────
+# Usage:  docker-compose up
+# Starts: PostgreSQL + Spring Boot backend
+# Frontend: run separately with npm run dev
+
+services:
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: creatoros
+      POSTGRES_USER: creatoros
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?Set SPRING_DATASOURCE_PASSWORD in .env}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U creatoros"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/creatoros
+      SPRING_DATASOURCE_USERNAME: creatoros
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?Set SPRING_DATASOURCE_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (generate with: openssl rand -base64 32)}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      WHISPER_PROVIDER: ${WHISPER_PROVIDER:-groq}
+      AI_PROVIDER: ${AI_PROVIDER:-groq}
+      FRONTEND_URL: http://localhost:3000
+      STORAGE_LOCAL_PATH: /app/uploads
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  uploads_data:
